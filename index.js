@@ -5,7 +5,6 @@ const qrcode = require('qrcode');
 const invisibleTagFeat = require('./features/invisibleTagFeat');
 const tagAllFeat = require('./features/tagAllFeat');
 const admin = require('firebase-admin');
-const serviceAccount = require('./firebaseServiceAccountKey.json');
 const app = express();
 
 app.use(cors(
