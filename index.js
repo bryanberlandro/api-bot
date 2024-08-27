@@ -4,6 +4,8 @@ const { Client, LocalAuth } = require('whatsapp-web.js');
 const qrcode = require('qrcode');
 const invisibleTagFeat = require('./features/invisibleTagFeat');
 const tagAllFeat = require('./features/tagAllFeat');
+const admin = require('firebase-admin');
+const serviceAccount = require('./firebaseServiceAccountKey.json');
 const app = express();
 
 app.use(cors(
@@ -12,11 +14,37 @@ app.use(cors(
     }
 ))
 
-let qrCode = ''; 
+admin.initializeApp({
+    credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    })
+});
+
+const db = admin.firestore();
+const sessionsCollection = db.collection('whatsapp-sessions');
+
+const store = {
+    async set(sessionId, data) {
+        await sessionsCollection.doc(sessionId).set(data);
+    },
+    async get(sessionId) {
+        const doc = await sessionsCollection.doc(sessionId).get();
+        return doc.exists ? doc.data() : null;
+    },
+    async delete(sessionId) {
+        await sessionsCollection.doc(sessionId).delete();
+    }
+};
 
 const client = new Client({
-    authStrategy: new LocalAuth()
+    authStrategy: new LocalAuth({
+        store
+    })
 });
+
+let qrCode = ''; 
 
 client.on('qr', (qr) => {
     qrcode.toDataURL(qr, (err, url) => {
